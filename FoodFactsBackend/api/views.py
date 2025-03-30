@@ -40,7 +40,7 @@ def uploadPhoto(request):
         - Your task is to accurately identify the calories, protein, carbs, sodium, vitamin A, and vitamin C.
         - Return ONLY a plain JSON object with no markdown, code blocks, or any other formatting.
         - Do not include any text before or after the JSON.
-        - The JSON should follow this exact structure:
+        - The JSON should follow this exact structure NO FUCKING MARKUP OR I WILL FUCKING KILL MYSELF:
         {
             "Calories": calories_value,
             "Protein": protein_value,

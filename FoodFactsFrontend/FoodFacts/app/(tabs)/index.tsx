@@ -10,6 +10,7 @@ import {
   Image,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Provider as PaperProvider, Button } from "react-native-paper";
@@ -17,6 +18,8 @@ import { Provider as PaperProvider, Button } from "react-native-paper";
 export default function HomeScreen() {
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [foodFacts, setFoodFacts] = useState<any | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
 
   const openCamera = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -52,26 +55,13 @@ export default function HomeScreen() {
     if (!photoBase64) return;
 
     try {
-      //const blob = await uriToBlob(photo);
-
-      // Construct form data
-      //const formData = new FormData();
-      //formData.append("image", blob, "food.jpg");
-
-      //const file = new File([blob], "food.jpg", { type: "image/jpeg" });
-
-      //const formData = new FormData();
-      //formData.append("image", file);
-
-      //const formData = new FormData();
-      //formData.append("image", blob, "food.jpg");
-
-      //console.log(blob.size);
+      // Set analyzing state to true to show loading indicator
+      setIsAnalyzing(true);
 
       console.log("Base64 to send: ", photoBase64);
 
       // Make the request
-      const response = await fetch("http://128.189.197.68:8000/upload/", {
+      const response = await fetch("http://128.189.195.73:8000/upload/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,10 +72,15 @@ export default function HomeScreen() {
       // Parse the response
       const data = await response.json();
       console.log("Response from server:", data);
+      setFoodFacts(data);
       // You can use data.ai to get the JSON returned by your model
       // e.g. {"Calories": ..., "Protein": ...}
     } catch (error) {
       console.error("Error during API call:", (error as Error).message);
+      Alert.alert("Error", "Failed to analyze the food. Please try again.");
+    } finally {
+      // Set analyzing state to false when done (whether success or error)
+      setIsAnalyzing(false);
     }
   };
 
@@ -103,6 +98,7 @@ export default function HomeScreen() {
               mode="contained"
               onPress={deletePhoto}
               style={styles.button}
+              disabled={isAnalyzing}
             >
               Delete Photo
             </Button>
@@ -110,10 +106,39 @@ export default function HomeScreen() {
               mode="contained"
               onPress={calculateMacros}
               style={styles.button}
+              disabled={isAnalyzing}
             >
               Get FoodFacts
             </Button>
           </>
+        )}
+
+        {isAnalyzing && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            <Text style={styles.loadingText}>Analyzing food...</Text>
+          </View>
+        )}
+
+        {foodFacts && photoBase64 && !isAnalyzing && (
+          <View style={styles.factsContainer}>
+            <Text style={styles.factText}>
+              Calories: {foodFacts.Calories || 0}
+            </Text>
+            <Text style={styles.factText}>Carbs: {foodFacts.Carbs || 0} g</Text>
+            <Text style={styles.factText}>
+              Protein: {foodFacts.Protein || 0} g
+            </Text>
+            <Text style={styles.factText}>
+              Sodium: {foodFacts.Sodium || 0} mg
+            </Text>
+            <Text style={styles.factText}>
+              Vitamin A: {foodFacts["Vitamin A"] || 0} mcg
+            </Text>
+            <Text style={styles.factText}>
+              Vitamin C: {foodFacts["Vitamin C"] || 0} mg
+            </Text>
+          </View>
         )}
       </SafeAreaView>
     </PaperProvider>
@@ -141,6 +166,36 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 20,
+  },
+  factsContainer: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: "#f1f1f1",
+    borderRadius: 10,
+    width: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  factText: {
+    fontSize: 18,
+    color: "#333",
+    marginBottom: 8,
+    fontWeight: "500",
+    fontFamily: "Trebuchet MS",
+  },
+  loadingContainer: {
+    marginTop: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#333",
+    fontFamily: "Trebuchet MS",
   },
 });
 
