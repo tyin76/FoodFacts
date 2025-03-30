@@ -133,7 +133,7 @@ function computeGrade(foodFacts: any): GradeInfo {
   if (score >= 15) {
     return { color: "green", grade: "A" };
   } else if (score >= 11) {
-    return { color: "yellow", grade: "B" };
+    return { color: "teal", grade: "B" };
   } else if (score >= 7) {
     return { color: "orange", grade: "C" };
   } else {
