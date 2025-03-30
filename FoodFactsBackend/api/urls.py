@@ -5,5 +5,5 @@ urlpatterns = [
     path('', views.getData),
     path('add/', views.addItem),
     path('test/', views.testAPI),
-    path('upload/', views.uploadPhotoViaPostman),
+    path('upload/', views.uploadPhoto),
 ]
