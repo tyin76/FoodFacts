@@ -7,7 +7,6 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from google.genai import types
-
 load_dotenv()
 client = genai.Client(api_key=os.environ.get("GENAI_KEY"))
 
@@ -31,28 +30,31 @@ def testAPI(request):
 
 @api_view(['POST'])
 def uploadPhotoViaPostman(request):
+
     instructions = """
-    You are provided an image that should contain at least one or more items of food/drink. 
-    
-    
+    You are provided an image that should contain at least one or more items of food/drink.
+
     Instructions:
-        - Your task is to accurately identiy the calories, protein, carbs, sodium, vitamin A, and vitamin C.
+        - Your task is to accurately identify the calories, protein, carbs, sodium, vitamin A, and vitamin C.
+        - Return ONLY a plain JSON object with no markdown, code blocks, or any other formatting.
+        - Do not include any text before or after the JSON.
+        - The JSON should follow this exact structure:
+        {
+            "Calories": calories_value,
+            "Protein": protein_value,
+            "Carbs": carbs_value,
+            "Sodium": sodium_value,
+            "Vitamin A": vitamin_a_value,
+            "Vitamin C": vitamin_c_value
+        }
+    Example of correct output:
+    {"Calories": 140, "Protein": 2, "Carbs": 17, "Sodium": 180, "Vitamin A": 0.02, "Vitamin C": 0.0}
 
-
-    Output Format:
-    {
-        "Calories": calories_value
-        "Protein": protein_value in g
-        "Carbs": carbs_value in g
-        "Sodium": sodium_value in mg
-        "Vitamin A": vitamin_a_value in mcg
-        "Vitamin C": vitamin_c_value in mg
-    }
-    Should be formatted as a JSON object that can immediately be parsed by a computer. IGNORE THE MARKDOWN.
+    This JSON must be directly parseable by JSON.loads with no pre-processing.
     """
     image_file = request.FILES['image']
     image_data = image_file.read()
-    response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=[instructions, types.Part.from_bytes(data=image_data, mime_type="image/jpeg")])
+    response = client.models.generate_content(model="gemini-1.5-pro", contents=[instructions, types.Part.from_bytes(data=image_data, mime_type="image/jpeg")])
     return Response({"ai": response.text, "message": "image received", "filename": image_file.name})
 
 
