@@ -1,3 +1,5 @@
+import base64
+import json
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from base.models import Item
@@ -29,7 +31,7 @@ def testAPI(request):
     return Response({"ai": response.text})
 
 @api_view(['POST'])
-def uploadPhotoViaPostman(request):
+def uploadPhoto(request):
 
     instructions = """
     You are provided an image that should contain at least one or more items of food/drink.
@@ -52,9 +54,27 @@ def uploadPhotoViaPostman(request):
 
     This JSON must be directly parseable by JSON.loads with no pre-processing.
     """
-    image_file = request.FILES['image']
-    image_data = image_file.read()
-    response = client.models.generate_content(model="gemini-1.5-pro", contents=[instructions, types.Part.from_bytes(data=image_data, mime_type="image/jpeg")])
-    return Response({"ai": response.text, "message": "image received", "filename": image_file.name})
+    
+    #print(request.FILES);
+    #image_file = request.FILES['image']
+    #image_data = image_file.read()
+    #print("Got %d bytes" % len(image_data))
+    #if image_file.size == 0:
+    #    return Response({"error": "Image file is empty", "size": image_data}, status=400)
+
+    base64_image = request.data['image']
+    image_data = base64.b64decode(base64_image)
+
+    response = client.models.generate_content(
+        model="gemini-1.5-pro",
+        contents=[instructions, types.Part.from_bytes(data=image_data, mime_type="image/jpeg")]
+    )
+
+    json_response = json.loads(response.text)
+    print(json_response)
+    return Response(json_response)
+
+    #response = client.models.generate_content(model="gemini-1.5-pro", contents=[instructions, types.Part.from_bytes(data=image_data, mime_type="image/jpeg")])
+    #return Response({"ai": response.text, "message": "image received", "filename": image_file.name})
 
 

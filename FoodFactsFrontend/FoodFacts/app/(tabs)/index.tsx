@@ -1,3 +1,6 @@
+(Blob.prototype as any)[Symbol.toStringTag] = "Blob";
+(File.prototype as any)[Symbol.toStringTag] = "File";
+
 import React, { useState } from "react";
 import {
   SafeAreaView,
@@ -6,16 +9,17 @@ import {
   StyleSheet,
   Image,
   Alert,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Provider as PaperProvider, Button } from "react-native-paper";
 
 export default function HomeScreen() {
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   const openCamera = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
     if (permissionResult.granted === false) {
       Alert.alert(
         "Permission denied",
@@ -25,22 +29,64 @@ export default function HomeScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
+      base64: true,
       allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
-      console.log("Photo URI:", result.assets[0].uri);
+      const { uri, base64 } = result.assets[0];
+      console.log("Base64 camera image:", base64);
+      setPhotoBase64(base64 || "");
+      setPhotoUri(uri);
     }
   };
 
   const deletePhoto = () => {
-    setPhoto(null);
+    setPhotoBase64(null);
+    setPhotoUri(null);
   };
 
-  const calculateMacros = () => {
-    deletePhoto();
+  // This is the function that makes the API call:
+  const calculateMacros = async () => {
+    if (!photoBase64) return;
+
+    try {
+      //const blob = await uriToBlob(photo);
+
+      // Construct form data
+      //const formData = new FormData();
+      //formData.append("image", blob, "food.jpg");
+
+      //const file = new File([blob], "food.jpg", { type: "image/jpeg" });
+
+      //const formData = new FormData();
+      //formData.append("image", file);
+
+      //const formData = new FormData();
+      //formData.append("image", blob, "food.jpg");
+
+      //console.log(blob.size);
+
+      console.log("Base64 to send: ", photoBase64);
+
+      // Make the request
+      const response = await fetch("http://128.189.197.68:8000/upload/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image: photoBase64 }),
+      });
+
+      // Parse the response
+      const data = await response.json();
+      console.log("Response from server:", data);
+      // You can use data.ai to get the JSON returned by your model
+      // e.g. {"Calories": ..., "Protein": ...}
+    } catch (error) {
+      console.error("Error during API call:", (error as Error).message);
+    }
   };
 
   return (
@@ -50,8 +96,8 @@ export default function HomeScreen() {
         <Button mode="contained" onPress={openCamera}>
           Upload Photo
         </Button>
-        {photo && <Image source={{ uri: photo }} style={styles.image} />}
-        {photo && (
+        {photoUri && <Image source={{ uri: photoUri }} style={styles.image} />}
+        {photoBase64 && (
           <>
             <Button
               mode="contained"
@@ -65,7 +111,7 @@ export default function HomeScreen() {
               onPress={calculateMacros}
               style={styles.button}
             >
-              Calculate Macros
+              Get FoodFacts
             </Button>
           </>
         )}
@@ -97,3 +143,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+
+// Updated uriToBlob function for better iOS support
+async function uriToBlob(uri: string): Promise<Blob> {
+  const resp = await fetch(uri);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch file: HTTP ${resp.status}`);
+  }
+  const blob = await resp.blob();
+  console.log("Blob size:", blob.size);
+  return blob;
+}
